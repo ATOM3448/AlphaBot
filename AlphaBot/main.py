@@ -3,7 +3,7 @@ import Command_StartRegistration
 import System_GetInfoOfUser
 import discord
 from discord.ext import commands
-from System_config import settings
+from System_Config import settings
 
 intents = discord.Intents.default()
 intents.message_content = True

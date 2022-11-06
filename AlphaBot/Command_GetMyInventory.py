@@ -1,7 +1,7 @@
 import asyncio
 import discord
 import codecs
-from System_resource import res
+from System_Resource import res
 
 async def inf(ctx, bot):
     user = ctx.message.author.id

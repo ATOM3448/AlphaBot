@@ -1,5 +1,5 @@
 import codecs
-from System_resource import res
+from System_Resource import res
 
 #Получить содержимое файла
 def getLineInFile(user_id, file):

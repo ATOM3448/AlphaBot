@@ -1,7 +1,6 @@
-import codecs
 import discord
 import Command_RegistationNewKonkist
-from System_config import settingsForSrever as localSet
+from System_Config import settingsForSrever as localSet
 import sqlite3
 
 async def newreg(ctx, bot):
@@ -18,16 +17,19 @@ async def newreg(ctx, bot):
     embed1.add_field(name="Раса9️⃣", value='Не существует', inline=True)
     panel1 = await ctx.send(embed = embed1)
 
-    #with codecs.open(f'botdata/mesRegId.txt', 'w', 'utf-8') as f:
-    #    f.write(str(panel1.id)) #сохраняем информацию о id последней рег.панели
+    with sqlite3.connect('System_BotData/SystemData.db') as db:
+        cursor = db.cursor()
 
-    with sqlite3.connect('System_botdata/db/database.db') as db:
-        cursor = db.cursor() # бегунок по базе данных, чтобы вносить данные
-        query = """ CREATE TABLE IF NOT EXISTS expenses(id INTEGER) """ # создание таблицы, 
-                                                                        # если она еще не создана
-        cursor.execute(query)
-        query = """ INSERT INTO expenses VALUES (:myValue)"""
-        cursor.execute(query, {'myValue':panel1.id})
+        cursor.execute("""DROP TABLE IF EXISTS RegPanelID;""")
+
+        db.commit()
+
+        cursor.execute("""CREATE TABLE IF NOT EXISTS RegPanelID(
+            id INTEGER PRIMARY KEY,
+            MessageOfRegistrationPanel INT);
+            """)
+
+        cursor.execute(f"""INSERT INTO RegPanelID VALUES(1, {panel1.id});""")
 
         db.commit()
 
@@ -40,18 +42,25 @@ async def newreg(ctx, bot):
     await panel1.add_reaction('7️⃣')
 
 async def roleset(bot, self):
+
+    with sqlite3.connect('System_BotData/SystemData.db') as db:
+        cursor = db.cursor()
+        cursor.execute("""SELECT * from RegPanelID""")
+        pane = cursor.fetchall()
+        
+    pane = pane[0][1]
+
+    if(self.message_id != pane): #проверяем рег панель ли это
+        return
     if(self.member.bot == True):
         return
+    
     guild = bot.get_guild(localSet['guild'])
-    with codecs.open(f'botdata/mesRegId.txt', 'r+', 'utf-8') as f: #достаём информацию о id последней рег.панели
-        pane = int(f.read())
     roles = self.member.roles
     rolin = guild.get_role(localSet['regrole'])
     if(not(rolin in roles)):
         return
-    await self.member.remove_roles(rolin)
-    if(self.message_id != pane): #проверяем рег панель ли это
-        return
+    
     
     if(self.emoji == discord.PartialEmoji(name = '1️⃣')): #КОНКИСТЫ 655340889530433536
         role_id = localSet['konkisti']
@@ -82,3 +91,18 @@ async def roleset(bot, self):
         role_id = localSet['yashur']
         role = guild.get_role(role_id)
         await self.member.add_roles(role)
+    
+    with sqlite3.connect(f'System_BotData/SystemData.db') as db:
+        cursor = db.cursor()
+        cursor.execute("""CREATE TABLE IF NOT EXISTS List_of_players(
+            Discord_ID INT PRIMARY KEY,
+            Discord_Name TEXT);
+            """)
+        
+        db.commit()
+
+        cursor.execute(f"""INSERT INTO List_of_players VALUES({self.user_id}, "{self.member.display_name}");""")
+
+        db.commit()
+
+    await self.member.remove_roles(rolin)
